@@ -24,8 +24,12 @@ _port = 90
 
 
 con = MySQLdb.connect(host="localhost", user="root", passwd="123root123", db="albumdb")
-cursor = con.cursor()
-#con.select_db('banco de dados')
+cursor = con.cursor(MySQLdb.cursors.DictCursor)
+#for row in cursor:
+    #print("* {Name}".format(Name=row['Name']))
+
+
+
 
 class Server:
 
@@ -56,11 +60,17 @@ class Server:
 
 
     def mensagem(self, cliente):
+        #index = self.listSOCK.index(cliente)
         while True:
             mensagem = cliente.recv(1024).decode()
             print("a mensagem é: " + mensagem) 
             
-            if(mensagem == 'insere'): 
+            if(mensagem == 'iniciar'):
+                index = self.listSOCK.index(cliente)
+                server.comandoSOCK(index, "insira o próximo comando")
+
+            
+            elif(mensagem == 'insere'): 
                 cursor.execute("SELECT * FROM COLLECTOR")
                 teste = cursor.fetchall()
                 teste = json.dumps(teste, indent=4)
@@ -73,45 +83,168 @@ class Server:
                 testeLogin = cliente.recv(1024).decode()
                 print('insira a senha: ')
                 testeSenha = cliente.recv(1024).decode()
-                cursor.execute("SELECT id FROM COLLECTOR WHERE email = %s AND senha %s" % (testeLogin, testeSenha))
+                sqlQuery = "SELECT id FROM COLLECTOR WHERE email = %s AND password = %s"
+                cursor.execute(sqlQuery,(testeLogin, testeSenha))
+                # cursor.execute("SELECT id FROM COLLECTOR WHERE email = %s AND senha %s" % (testeLogin, testeSenha))
+                
+                #fazer verificação de existencia do usuario  
+                # retorno negativo -> "usuario não cadastrado"
+                
                 id = cursor.fetchall()
-                self.listID.append(id)
-                print('o id é: ')
+                self.listID.append(str(id[0].get('id')))
+                #testeId = json.loads(id[0])
+                #print('o id é: ' + str())
                 print(id)
+                teste = json.dumps(id, indent =4)
                 #teste = 'O id do usuário é '
                 index = self.listSOCK.index(cliente)
-                server.comandoSOCK(index,teste)
+                server.comandoSOCK(index, teste)
 
 
             elif(mensagem == 'printInventario'):  
-                user = 'gi' # getUser() usa com listID recebe o usuario #var a = select id from collector where username = 'guilherme'
-                cursor.execute("SELECT * FROM INVENTORY_CARDS\
+                user = self.listSOCK.index(cliente)
+                sqlQuery = "SELECT * FROM INVENTORY_CARDS\
                     JOIN CARD ON INVENTORY_CARDS.idCard = CARD.id\
-                    JOIN COLLECTOR ON  INVENTORY_CARDS.idCard = COLLECTOR.idCollector\
-                    WHERE INVENTORY_CARDS.idCollector = '%s'" % (user)) 
+                    JOIN COLLECTOR ON  INVENTORY_CARDS.idCollector = COLLECTOR.id\
+                    WHERE INVENTORY_CARDS.idCollector = %s"
+                cursor.execute(sqlQuery, (user)) 
                 teste = cursor.fetchall()
                 teste = json.dumps(teste, indent =4)
-                index = self.listSOCK.index(cliente)
                 server.comandoSOCK(index,teste)
             
-            elif(mensagem == 'printAlbum'):  
-                cursor.execute("SELECT * FROM ALBUM\
-                    JOIN COLLECTION_CARDS ON COLLECTION_CARDS.idAlbum = ALBUM.id\
-                          JOIN COLLECTOR ON ALBUM.ID = COLLECTOR.idAlbum")
+            elif(mensagem == 'printAlbum'):
+                index = self.listSOCK.index(cliente) 
+                user = self.listId[index]
+                sqlQuery = "SELECT * FROM Album A JOIN Collection_Cards B ON A.id = B.idAlbum\
+                    JOIN Card C ON C.id = B.idCard\
+                    JOIN Collector D ON A.id = D.idAlbum\
+                    JOIN Collector E ON E.idAlbum = A.id WHERE E.id = %s"
+                cursor.execute(sqlQuery, (user))
                 teste = cursor.fetchall() 
                 teste = json.dumps(teste, indent =4) 
                 index = self.listSOCK.index(cliente) 
                 server.comandoSOCK(index,teste)
 
             elif(mensagem == 'printLoja'): 
-                cursor.execute("") 
+                sqlQuery = "SELECT A.price, (SELECT C.name FROM Collector C WHERE A.idCollector = C.id) AS Vendedor,\
+                    B.name AS Carta, B.description, B.picture\
+                    FROM Store_Cards A JOIN Card B ON A.idCards = B.id"
+                cursor.execute(sqlQuery)
                 teste = cursor.fetchall() 
                 teste = json.dumps(teste, indent =4) 
                 index = self.listSOCK.index(cliente) 
                 server.comandoSOCK(index,teste)
+                idUser = self.listID[index]
+                
+                print('o id do usuario é: ' + str(idUser))
+                idOferta = cliente.recv(1024).decode()
+                    #sqlQuery = "SELECT"
+                sqlQuery = "SELECT coins FROM COLLECTOR WHERE id = %s"
+                cursor.execute(sqlQuery, (idUser))
+                consulta = cursor.fetchall()
+                qtdCoins = consulta[0].get('coins')
+                sqlQuery = "SELECT * FROM Store_Cards WHERE id = %s"
+                cursor.execute(sqlQuery, (idOferta))
+                consulta2 = cursor.fetchall()
+                precoOferta = consulta2[0].get('price')
+                if(precoOferta <= qtdCoins):
+                    qtdCoins = qtdCoins = precoOferta
+                    sqlQuery = "UPDATE Collector SET coins = %s WHERE id = %s"
+                    cursor.execute(sqlQuery, (qtdCoins, idUser))
+                    sqlQuery = "SELECT * FROM Inventory_Cards WHERE idCard = %s"
+                    qtdCards = cursor.execute(sqlQuery, (consulta2[0].get('idCards')))
+                    inventoryCardInfo = cursor.fetchAll()
+                    if(qtdCards > 0):
+                        sqlQuery = "UPDATE Inventory_Cards SET quantity = %s"
+                        cursor.execute(sqlQuery, str(inventoryCardInfo[0].get('quantity')+1))
+                    else:
+                        sqlQuery = "INSERT INTO Inventory_Cards (idCard, quantity, idCollector) VALUES (%s, 1, %s)" #tem que checar se já tem cartas no inventário do usuario desse tipo, se tiver apenas é necessário atualizar a quantidade
+                        cursor.execute(sqlQuery, (consulta2[0].get('idCards') ,idUser))
 
-            elif(mensagem == 'cadastra'): 
-                pass
+                        #falta adicionar o dinheiro ao usuário que estava vendendo caso o campo idCollector seja != NULL
+                    cursor.commit()
+                    
+                print(consulta[0].get('coins'))
+                print(json.dumps(consulta, indent = 4))
+
+
+            elif(mensagem == 'catalogo'):
+                sqlQuery = "SELECT * FROM Card"
+                cursor.execute(sqlQuery)
+                teste = cursor.fetchall()   
+                teste = json.dumps(teste, indent =4) 
+                index = self.listSOCK.index(cliente) 
+                server.comandoSOCK(index,teste)
+            elif(mensagem == 'cadastrar'):
+                print('bora cadastrar')
+                #pedir nome
+                index = self.listSOCK.index(cliente)
+                userName = cliente.recv(1024).decode()
+                #pedir email
+                userEmail = cliente.recv(1024).decode()
+                #pedir senha
+                password = cliente.recv(1024).decode()
+                #pedir confirmação de senha
+                passwordValidation = cliente.recv(1024).decode()
+                qtdRows = cursor.execute("SELECT * FROM Collector WHERE email = '%s'" % (userEmail))
+                if(qtdRows > 0):
+                    mensagem = "Email ja cadastrado"
+                    server.comandoSOCK(index, mensagem)
+                    #return "email ja existente"
+                elif(password == passwordValidation):
+                    sqlQuery = "INSERT INTO album (quantityCards, quantityStickeredCards) VALUES (0,0);"
+                    cursor.execute(sqlQuery)
+                                #SET @last_id_in_album = LAST_INSERT_ID();\
+                    sqlQuery = "INSERT INTO collector (name, email, password, coins, idAlbum) VALUES (%s, %s, %s, 10, %s);"
+                    print(cursor.lastrowid)
+                    #sqlQuery = "INSERT INTO Collector (name, email, password, coins) VALUES (%s, %s, %s, 10)"
+                    cursor.execute(sqlQuery, (userName, userEmail, password, cursor.lastrowid))
+                    con.commit()
+                    print('usuario inserido')
+                    #cursor.commit()
+                else:
+                    mensagem = "as senhas não coincidem"
+                    server.comandoSOCK(index, mensagem) 
+
+            elif(mensagem == "ColarFigura"):  
+                
+                # get figure id  
+                figure_id = '1'    
+                user = self.listSOCK.index(cliente)
+                
+                # obtem a quantidade de figuras coladas no album
+                quantityStickeredFromAlbum = "SELECT quantityStickeredCards JOIN Album ON Album.id = Collector.idAlbum WHERE id = %s" 
+                cursor.execute(quantityStickeredFromAlbum, (user))  
+                # atualiza 
+                sqlQuery = """ UPDATE Album SET quantityStickeredCards = %s JOIN Album ON Album.id = Collector.idAlbum\ 
+                WHERE (SELECT idAlbum JOIN Collector ON Album.id = Collector.id  
+                WHERE Album.id = Collector.idalbum) = %s """
+                # atualiza  
+                # inserir  no collection cards  (indicando o id da carta e o id do album )
+                cursor.execute(sqlQuery,(quantityStickeredFromAlbum, user))
+                # 
+                delete = "DELETE FROM tabela WHERE JOIN CARD ON INVENTORY_CARDS.idCard = CARD.id\
+                    JOIN COLLECTOR ON  INVENTORY_CARDS.idCollector = %s\
+                WHERE INVENTORY_CARDS.idCard = %s" 
+                cursor.execute(delete,(user,figure_id))
+                                
+                
+            # elif(mensagem == 'comprar'):
+            #     index = self.listSOCK.index(cliente)
+            #     idUser = self.listID[index]
+            #     ofertas = "SELECT * FROM Store_Cards"
+            #     idOferta = cliente.recv(1024).decode()
+            #     sqlQuery = "SELECT"
+            #     sqlQuery = "SELECT coins FROM COLLECTOR WHERE id = %s"
+            #     cursor.execute(sqlQuery, (idUser))
+            #     consulta = cursor.fetchall()
+
+                
+                #pass
+
+
+
+
             #self.sock.send(sendar.encode())
             # if (mensagem == ''):
             #     self.off = 1
