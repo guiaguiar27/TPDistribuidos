@@ -87,18 +87,26 @@ class Server:
                 cursor.execute(sqlQuery,(testeLogin, testeSenha))
                 # cursor.execute("SELECT id FROM COLLECTOR WHERE email = %s AND senha %s" % (testeLogin, testeSenha))
                 
-                #fazer verificação de existencia do usuario  
-                # retorno negativo -> "usuario não cadastrado"
-                
                 id = cursor.fetchall()
-                self.listID.append(str(id[0].get('id')))
-                #testeId = json.loads(id[0])
-                #print('o id é: ' + str())
+                self.listID.append(str(id[0].get('id'))) 
+                userID = str(id[0].get('id')) 
+                
                 print(id)
                 teste = json.dumps(id, indent =4)
                 #teste = 'O id do usuário é '
                 index = self.listSOCK.index(cliente)
-                server.comandoSOCK(index, teste)
+                server.comandoSOCK(index, teste) 
+                
+                qtdRows = cursor.execute("SELECT * FROM Collector WHERE email = '%s'" % (testeLogin))
+                if(qtdRows > 0):
+                    passwordDB = cursor.excute("SELECT password FROM Collector WHERE Collector.id = %s" % (userID))
+                    if(testeSenha == testeSenha): 
+                        mensagem  = "Login feito com sucesso"
+                        server.comandoSOCK(index, mensagem)
+                elif(qtdRows == 0):  
+                    mensagem = "Usuário não cadastrado"
+                    server.comandoSOCK(index, mensagem)
+
 
 
             elif(mensagem == 'printInventario'):  
