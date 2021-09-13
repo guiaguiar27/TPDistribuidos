@@ -1,6 +1,6 @@
 from tkinter import *  
 
-def registerUtil(): 
+def registerUtil():   
     usernameInfo = username.get() 
     emailInfo = email.get()
     passwordInfo = password.get() 
@@ -115,13 +115,12 @@ def  main_screen():
     global screen  
     screen = Tk() 
     screen.geometry("500x500") 
-    screen.title("Notes 1.0") 
-    Label(text = "Notes 1.0", bg="grey", width="500", height="2" ,font = ("Calibri", 18)).pack() 
+    screen.title("Album Game Of Thrones") 
+    Label(text = "ALBUM", bg="grey", width="500", height="2" ,font = ("Calibri", 18)).pack() 
     Label(text = "").pack()
-    Button(text = "Login",width="30", height="2", command = login).pack()  
+    BLogin = Button(text = "Login",width="30", height="2", command = login).pack()  
     Button(text = "").pack() 
-    Button(text = "Register",width="30", height="2",command = register).pack()  
-    
+    BRegister = Button(text = "Register",width="30", height="2",command = register).pack()  
     screen.mainloop()
 
 main_screen()
