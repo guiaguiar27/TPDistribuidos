@@ -1,4 +1,5 @@
-from tkinter import *  
+from tkinter import *   
+#from src.collector import collector
 
 def registerUtil():   
     usernameInfo = username.get() 
@@ -13,6 +14,10 @@ def registerUtil():
     username_entry.delete(0, END) 
     password_entry.delete(0, END) 
 
+    # NewCollector = collector()
+    # NewCollector.register(emailInfo, usernameInfo, passwordInfo) 
+    # NewCollector.show_collector()
+    
     Result = Label(screen1, text = "Registro com sucesso", fg ="green").pack()
     #Result.delete(0,END) 
 
@@ -73,11 +78,12 @@ def loginUtil():
     Lpassword_entry.delete(0, END) 
 
     Result = Label(screen2, text = "Login com sucesso", fg ="green").pack()
-    #Result.delete(0,END) 
+    
 
 
 
-def login():  
+def login():   
+
     print("register") 
     global screen2  
     screen2 = Toplevel(screen) 
@@ -120,7 +126,8 @@ def  main_screen():
     Label(text = "").pack()
     BLogin = Button(text = "Login",width="30", height="2", command = login).pack()  
     Button(text = "").pack() 
-    BRegister = Button(text = "Register",width="30", height="2",command = register).pack()  
+    BRegister = Button(text = "Register",width="30", height="2",command = register).pack()   
+
     screen.mainloop()
 
 main_screen()
