@@ -1,5 +1,5 @@
-from .album import album 
-from .inventory import inventory  
+from album import album 
+from inventory import inventory  
 
 class collector:  
 
@@ -13,7 +13,7 @@ class collector:
         self.name = None
 
 
-    def addCard(self, card: Card): 
+    def addCard(self, Card): 
         pass
     def login(self): 
         pass  
@@ -30,8 +30,14 @@ class collector:
         self.name = name
         
       
-    def addCoins(self): 
-        pass 
+    def addCoins(self):   
+
+        coins = input("How many coins do you want to add? ") 
+        self.coins += coins 
+    
+    def removeCoins(self,coins): 
+        self.coins -= coins 
+
     def PutSticker(self): 
         pass 
     

@@ -1,4 +1,4 @@
-from .card import card 
+from card import card 
 
 class inventory: 
     def __init__(self): 
