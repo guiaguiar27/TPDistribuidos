@@ -45,5 +45,8 @@ class collector:
         print("Collector: " + self.name) 
         print("Coins: " + str(self.coins))
         print("Email: " + self.email)
-        print("Password: " + self.password)
+        print("Password: " + self.password) 
+    def show_album(self):  
+        pass
+
 
