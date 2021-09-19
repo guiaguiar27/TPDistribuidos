@@ -7,7 +7,7 @@ import time
 import sys   
 
 sys.path.insert(0, '/Users/Macbook/Documents/TPDistribuidos')  
-import menuInit
+from menuInit import menuinit
 
 address = input("Insira o endereço de conexão: ")
 garbage, dataAdress = address.split("//") 
@@ -38,7 +38,7 @@ class Client:
     def handler(self):
         while True: 
 
-            self.menu.init()
+            self.menu.init(self)
             #sendar = input()
             #self.sock.send(sendar.encode())
             # cliente, addr = self.server.accept()
@@ -69,7 +69,7 @@ class Client:
 
 def main():
     client = Client(_ip,_port) 
-    client.menu = menuInit.menuinit(_ip,_port) 
+    client.menu = menuinit(_ip,_port) 
     #client.mensagemThread()
     client.threadHandler()
 

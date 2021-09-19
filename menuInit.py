@@ -1,8 +1,8 @@
 import sys   
-sys.path.insert(0, '/Users/Macbook/Documents/TPDistribuidos/Client')  
+#sys.path.insert(0, '/Users/Macbook/Documents/TPDistribuidos/Client')  
 sys.path.insert(0, '/Users/Macbook/Documents/TPDistribuidos/src')  
 
-from client import Client 
+#from client import Client 
 from src.collector import collector 
 
 
@@ -66,7 +66,7 @@ class menuinit:
         else: 
             return None
     # pagina de acesso do usuario 
-    def menu(self, User): 
+    def menu(self, User,client): 
         print("---------------MENU------------------")  
         opion = 0  
         while opion != 5:
@@ -87,22 +87,22 @@ class menuinit:
 
 
     #pagina inicial
-    def init(self): 
+    def init(self,client): 
         
         print("Entre com 1 para login ou 2 para cadastro:") 
         First = int(input())  
         if First == 1:  
-            User = login()
+            User = self.login(client)
             if User != None: 
-                self.menu(User)  
+                self.menu(User,client)
             else: 
                 print("Login invalido") 
-                self.init()
+                self.init(client)
 
         else: 
-            User = register()
+            User = self.register(client)
             if User != None:
-                self.menu(User) 
+                self.menu(User,client) 
             else: 
                 sys.exit("Usuario nao autenticado")  
     
