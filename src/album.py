@@ -3,7 +3,12 @@ class album:
         super().__init__() 
         self.album_id = None 
         self.stickeredCards = [] 
-    def addCards(self): 
-        pass 
+    def addCardsIndividual(self, card): 
+        self.stickeredCards.append(card)
+    def addCardsFromPack(self, pack): 
+        for  i in pack: 
+            self.stickeredCards.append(i)
+
     def showCards(self): 
-        pass   
+        for i in self.stickeredCards: 
+            i.showCard()   

@@ -30,7 +30,8 @@ def menu(User):
         if option == 1:
             User.show_collector()
         elif option == 2:  
-            print("==Pagina album==") 
+            print("==Pagina album==")  
+            User.show_album()
         elif option == 3: 
             print("==Inventario==") 
         elif option == 4: 
