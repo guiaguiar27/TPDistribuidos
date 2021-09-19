@@ -3,7 +3,11 @@ import os
 import subprocess
 import signal
 import threading
-import time
+import time 
+import sys   
+
+sys.path.insert(0, '/Users/Macbook/Documents/TPDistribuidos')  
+import menuInit
 
 address = input("Insira o endereço de conexão: ")
 garbage, dataAdress = address.split("//") 
@@ -22,23 +26,27 @@ class Client:
 # print("Connected to {}:{}".format(host, port))
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print("o ip é: " + _ip)
-        print("A porta é: " + _port)
+        #print("o ip é: " + _ip)
+        #print("A porta é: " + _port)
         self.sock.connect((ip,int(port)))
         self.sock.settimeout(None)
         fileobj = self.sock.makefile('rb', 0)
         self.listMensagem = []
-        self.off = 0
+        self.off = 0 
+        self.menu = None
 
     def handler(self):
-        while True:
-            sendar = input()
-            self.sock.send(sendar.encode())
+        while True: 
+
+            self.menu.init()
+            #sendar = input()
+            #self.sock.send(sendar.encode())
             # cliente, addr = self.server.accept()
             # self.mensagemThread(cliente)
             # print("\n\033[1;94m[*] Conexao recebida de: {} - {} ID:{} \033[0;0m\n".format(addr[0],addr[1],len(self.listSOCK)))
             # self.listSOCK.append(cliente)
             # self.listHOST.append(addr[0])
+
 
     def mensagem(self):
         while True:
@@ -60,8 +68,9 @@ class Client:
         thread.start()
 
 def main():
-    client = Client(_ip,_port)
-    client.mensagemThread()
+    client = Client(_ip,_port) 
+    client.menu = menuInit.menuinit(_ip,_port) 
+    #client.mensagemThread()
     client.threadHandler()
 
 main()
