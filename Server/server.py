@@ -53,6 +53,7 @@ class Server:
             cliente, addr = self.server.accept()
             self.mensagemThread(cliente)
             print("\n\033[1;94m[*] Conexao recebida de: {} - {} ID:{} \033[0;0m\n".format(addr[0],addr[1],len(self.listSOCK)))
+            print('estou aqui no append')
             self.listSOCK.append(cliente)
             self.listHOST.append(addr[0])
             #server.comandoSOCK()
@@ -83,26 +84,32 @@ class Server:
                 testeLogin = cliente.recv(1024).decode()
                 print('insira a senha: ')
                 testeSenha = cliente.recv(1024).decode()
-                sqlQuery = "SELECT id FROM COLLECTOR WHERE email = %s AND password = %s"
-                cursor.execute(sqlQuery,(testeLogin, testeSenha))
-                # cursor.execute("SELECT id FROM COLLECTOR WHERE email = %s AND senha %s" % (testeLogin, testeSenha))
-                
-                id = cursor.fetchall()
-                self.listID.append(str(id[0].get('id'))) 
-                userID = str(id[0].get('id')) 
-                
-                print(id)
-                teste = json.dumps(id, indent =4)
-                #teste = 'O id do usuário é '
                 index = self.listSOCK.index(cliente)
-                server.comandoSOCK(index, teste) 
+                #sqlQuery = "SELECT id FROM COLLECTOR WHERE email = %s AND password = %s"
+                #cursor.execute(sqlQuery,(testeLogin, testeSenha))
+                # cursor.execute("SELECT id FROM COLLECTOR WHERE email = %s AND senha %s" % (testeLogin, testeSenha))
+                print(str(testeLogin))
+                print(str(testeSenha))
                 
                 qtdRows = cursor.execute("SELECT * FROM Collector WHERE email = '%s'" % (testeLogin))
+                ReturnDB = cursor.fetchall() 
+
                 if(qtdRows > 0):
-                    passwordDB = cursor.excute("SELECT password FROM Collector WHERE Collector.id = %s" % (userID))
-                    if(testeSenha == testeSenha): 
-                        mensagem  = "Login feito com sucesso"
-                        server.comandoSOCK(index, mensagem)
+                    #passwordDB = cursor.excute("SELECT password FROM Collector WHERE Collector.id = %s" % (userID))
+                    passFromDb =  ReturnDB[0].get('password')
+                    if(testeSenha == passFromDb): 
+                        mensagem  = "Login feito com sucesso" 
+                        server.comandoSOCK(index, mensagem) 
+                        #id = cursor.fetchall()
+                        self.listID.append(str(ReturnDB[0].get('id'))) 
+                        #userID = str(id[0].get('id')) 
+
+                        #teste = json.dumps(id, indent =4)
+                        #teste = 'O id do usuário é '
+                        #index = self.listSOCK.index(cliente)
+                        #server.comandoSOCK(index, teste) 
+                    
+
                 elif(qtdRows == 0):  
                     mensagem = "Usuário não cadastrado"
                     server.comandoSOCK(index, mensagem)
@@ -133,7 +140,7 @@ class Server:
                 index = self.listSOCK.index(cliente) 
                 server.comandoSOCK(index,teste)
 
-            elif(mensagem == 'printLoja'): 
+            elif(mensagem == 'loja'): 
                 sqlQuery = "SELECT A.price, (SELECT C.name FROM Collector C WHERE A.idCollector = C.id) AS Vendedor,\
                     B.name AS Carta, B.description, B.picture\
                     FROM Store_Cards A JOIN Card B ON A.idCards = B.id"
@@ -156,22 +163,34 @@ class Server:
                 consulta2 = cursor.fetchall()
                 precoOferta = consulta2[0].get('price')
                 if(precoOferta <= qtdCoins):
-                    qtdCoins = qtdCoins = precoOferta
-                    sqlQuery = "UPDATE Collector SET coins = %s WHERE id = %s"
+                    qtdCoins = qtdCoins - precoOferta
+                    sqlQuery = "UPDATE Collector SET coins = %s WHERE id = %s" #debita a quantidade de moedas pagas na oferta
                     cursor.execute(sqlQuery, (qtdCoins, idUser))
-                    sqlQuery = "SELECT * FROM Inventory_Cards WHERE idCard = %s"
+                    sqlQuery = "SELECT * FROM Inventory_Cards WHERE idCard = %s" #pega a quantidade de cartas desse tipo no inventário do comprador
                     qtdCards = cursor.execute(sqlQuery, (consulta2[0].get('idCards')))
                     inventoryCardInfo = cursor.fetchAll()
                     if(qtdCards > 0):
-                        sqlQuery = "UPDATE Inventory_Cards SET quantity = %s"
+                        sqlQuery = "UPDATE Inventory_Cards SET quantity = %s" #aumenta a quantidade de cartas do mesmo tipo caso o comprador ja possua a carta no inventário
                         cursor.execute(sqlQuery, str(inventoryCardInfo[0].get('quantity')+1))
                     else:
-                        sqlQuery = "INSERT INTO Inventory_Cards (idCard, quantity, idCollector) VALUES (%s, 1, %s)" #tem que checar se já tem cartas no inventário do usuario desse tipo, se tiver apenas é necessário atualizar a quantidade
+                        sqlQuery = "INSERT INTO Inventory_Cards (idCard, quantity, idCollector) VALUES (%s, 1, %s)" #insere a carta no inventário do comprador caso ele não possua uma instancia dela no inventário
                         cursor.execute(sqlQuery, (consulta2[0].get('idCards') ,idUser))
+                    
+                    sqlQuery = "SELECT coins FROM COLLECTOR WHERE COLLECTOR.id = %s" #pega a quantidade de moedas do vendedor, para calcular o novo valor
+                    cursor.execute(sqlQuery, (consulta2[0].get('idCollector')))
+                    consultaCoins = cursor.fetchall()
+                    coinsVendedor = consultaCoins[0].get('coins')
+                    coinsVendedor = coinsVendedor + precoOferta
+                    sqlQuery = "UPDATE COLLECTOR SET coins = %s WHERE id = %s" #paga o vendedor da oferta
+                    cursor.execute(sqlQuery, (coinsVendedor, consulta2[0].get('idCollector')))
 
+                    sqlQuery = "DELETE FROM Store_Cards WHERE Store_Cards.id = %s" #remove a oferta da loja, pois ela ja foi consumida
+                    cursor.execute(sqlQuery, (idOferta))
                         #falta adicionar o dinheiro ao usuário que estava vendendo caso o campo idCollector seja != NULL
                     cursor.commit()
-                    
+                else:
+                    mensagem = 'quantidade de moedas insuficiente'
+                    server.comandoSOCK(index,mensagem)
                 print(consulta[0].get('coins'))
                 print(json.dumps(consulta, indent = 4))
 
@@ -209,6 +228,7 @@ class Server:
                     cursor.execute(sqlQuery, (userName, userEmail, password, cursor.lastrowid))
                     con.commit()
                     print('usuario inserido')
+                    server.comandoSOCK(index, 'usuario inserido')
                     #cursor.commit()
                 else:
                     mensagem = "as senhas não coincidem"
@@ -245,8 +265,9 @@ class Server:
             #     sqlQuery = "SELECT"
             #     sqlQuery = "SELECT coins FROM COLLECTOR WHERE id = %s"
             #     cursor.execute(sqlQuery, (idUser))
-            #     consulta = cursor.fetchall()
-
+            #     consultaResponse = cursor.fetchall()
+            #     quantityCoins =  consultaResponse[0].get('coins')
+            #     if(quantityCoins >= )
                 
                 #pass
 
