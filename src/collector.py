@@ -1,11 +1,11 @@
-from album import album 
-from inventory import inventory  
+from .album import album 
+from .inventory import inventory  
 
 class collector:  
 
     def __init__(self):   
 
-        self.inventory  = None
+        self.inventory = None
         self.coins = 0
         self.email = None  
         self.password  = None
@@ -46,7 +46,8 @@ class collector:
         print("Coins: " + str(self.coins))
         print("Email: " + self.email)
         print("Password: " + self.password) 
-    def show_album(self):  
-        
 
+
+    def show_album(self):   
+        self.album.show_album()
 

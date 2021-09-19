@@ -226,7 +226,8 @@ class Server:
                     print(cursor.lastrowid)
                     #sqlQuery = "INSERT INTO Collector (name, email, password, coins) VALUES (%s, %s, %s, 10)"
                     cursor.execute(sqlQuery, (userName, userEmail, password, cursor.lastrowid))
-                    con.commit()
+                    con.commit() 
+
                     print('usuario inserido')
                     server.comandoSOCK(index, 'usuario inserido')
                     #cursor.commit()
@@ -244,7 +245,7 @@ class Server:
                 quantityStickeredFromAlbum = "SELECT quantityStickeredCards JOIN Album ON Album.id = Collector.idAlbum WHERE id = %s" 
                 cursor.execute(quantityStickeredFromAlbum, (user))  
                 # atualiza 
-                sqlQuery = """ UPDATE Album SET quantityStickeredCards = %s JOIN Album ON Album.id = Collector.idAlbum\ 
+                sqlQuery = """ UPDATE Album SET quantityStickeredCards = %s JOIN Album ON Album.id = Collector.idAlbum
                 WHERE (SELECT idAlbum JOIN Collector ON Album.id = Collector.id  
                 WHERE Album.id = Collector.idalbum) = %s """
                 # atualiza  
