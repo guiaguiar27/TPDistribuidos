@@ -85,6 +85,7 @@ class Server:
                 print('insira a senha: ')
                 testeSenha = cliente.recv(1024).decode()
                 index = self.listSOCK.index(cliente)
+                print("o index é: " + str(index))
                 #sqlQuery = "SELECT id FROM COLLECTOR WHERE email = %s AND password = %s"
                 #cursor.execute(sqlQuery,(testeLogin, testeSenha))
                 # cursor.execute("SELECT id FROM COLLECTOR WHERE email = %s AND senha %s" % (testeLogin, testeSenha))
@@ -98,14 +99,16 @@ class Server:
                     #passwordDB = cursor.excute("SELECT password FROM Collector WHERE Collector.id = %s" % (userID))
                     passFromDb =  ReturnDB[0].get('password')
                     if(testeSenha == passFromDb): 
-                        mensagem  = "Login feito com sucesso" 
+                        mensagem  = "Login feito com sucesso"
                         server.comandoSOCK(index, mensagem) 
                         #id = cursor.fetchall()
                         self.listID.append(str(ReturnDB[0].get('id')))
-                        user = self.listID[index]
 
+                        print('o tamanho da lista é: ' + str(len(self.listID)))
+                        user = self.listID[index]
+                        print('o usuario é: ' + str(user) )
                         #================================= Checar se a frequencia deve ser mantida e premiar =================================
-                        sqlQuery = 'SELECT DATE(lastConnection) AS lastConnectionYesterday FROM COLLECTOR WHERE id = %s'
+                        sqlQuery = "SELECT DATE(lastConnection) AS lastConnectionYesterday FROM COLLECTOR WHERE id = %s"
                         cursor.execute(sqlQuery, (user))
                         oldDateResponse = cursor.fetchall()
                         oldLastConnection = oldDateResponse[0].get('lastConnectionYesterday')
@@ -132,14 +135,14 @@ class Server:
 
 
             elif(mensagem == 'printInventario'):  
-                user = self.listSOCK.index(cliente)
+                user = self.listID[index]
                 sqlQuery = "SELECT * FROM INVENTORY_CARDS\
                     JOIN CARD ON INVENTORY_CARDS.idCard = CARD.id\
                     JOIN COLLECTOR ON  INVENTORY_CARDS.idCollector = COLLECTOR.id\
                     WHERE INVENTORY_CARDS.idCollector = %s"
                 cursor.execute(sqlQuery, (user)) 
                 teste = cursor.fetchall()
-                teste = json.dumps(teste, indent =4)
+                teste = json.dumps(teste, indent =4, sort_keys=True, default=str)
                 server.comandoSOCK(index,teste)
             
             elif(mensagem == 'printAlbum'):
@@ -151,11 +154,12 @@ class Server:
                     JOIN Collector E ON E.idAlbum = A.id WHERE E.id = %s"
                 cursor.execute(sqlQuery, (user))
                 teste = cursor.fetchall() 
-                teste = json.dumps(teste, indent =4) 
+                teste = json.dumps(teste, indent =4, sort_keys=True, default=str) 
                 index = self.listSOCK.index(cliente) 
                 server.comandoSOCK(index,teste)
 
-            elif(mensagem == 'loja'): 
+            elif(mensagem == 'loja'):
+                print('entrou na loja')
                 sqlQuery = "SELECT A.price, (SELECT C.name FROM Collector C WHERE A.idCollector = C.id) AS Vendedor,\
                     B.name AS Carta, B.description, B.picture\
                     FROM Store_Cards A JOIN Card B ON A.idCards = B.id"
