@@ -155,10 +155,12 @@ class Server:
                 index = self.listSOCK.index(cliente) 
                 server.comandoSOCK(index,teste)
 
-            elif(mensagem == 'loja'): 
+            elif(mensagem == 'loja'):  
+                
                 sqlQuery = "SELECT A.price, (SELECT C.name FROM Collector C WHERE A.idCollector = C.id) AS Vendedor,\
                     B.name AS Carta, B.description, B.picture\
-                    FROM Store_Cards A JOIN Card B ON A.idCards = B.id"
+                    FROM Store_Cards A JOIN Card B ON A.idCards = B.id" 
+
                 cursor.execute(sqlQuery)
                 teste = cursor.fetchall() 
                 teste = json.dumps(teste, indent =4) 

@@ -6,7 +6,7 @@ class card:
         self.id = None  
         self.FileAddress = None #1.png - 2.png
 
-    def  showCard(self) :
+    def  showCard(self):
         print(self.name)
         print(self.description) 
 
