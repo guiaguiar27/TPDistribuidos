@@ -4,29 +4,25 @@ from .inventory import inventory
 class collector:  
 
     def __init__(self):   
-
         self.inventory = None
         self.coins = 0
         self.email = None  
         self.password  = None
         self.album = None 
-        self.name = None
+        self.name = None 
+        self.ClientSocket = None
 
 
     def addCard(self, Card): 
         pass
-    def login(self): 
-        pass  
-    def logou(self): 
-        pass 
+    
     
     def NewUser(self,email,password, name):  
 
         self.inventory = inventory()
         self.album = album()
         self.email = email # graphical input 
-        self.password = password # graphical input 
-        self.coins = 0     
+        self.password = password # graphical input     
         self.name = name
         
       
@@ -48,6 +44,11 @@ class collector:
         print("Password: " + self.password) 
 
 
-    def show_album(self):   
-        self.album.show_album()
+    def show_album(self,client):  
 
+        firstRequest = "printAlbum" 
+        client.sock.send(firstRequest.encode()) 
+        response = client.sock.recv(1024).decode()         
+        print(response)
+
+    

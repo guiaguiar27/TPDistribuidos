@@ -6,7 +6,7 @@ import threading
 import time 
 import sys   
 
-sys.path.insert(0, '/Users/Macbook/Documents/TPDistribuidos')  
+sys.path.insert(0, '../')  
 from menuInit import menuinit
 
 address = input("Insira o endereço de conexão: ")
