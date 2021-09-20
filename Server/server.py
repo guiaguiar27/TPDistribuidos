@@ -101,14 +101,29 @@ class Server:
                         mensagem  = "Login feito com sucesso" 
                         server.comandoSOCK(index, mensagem) 
                         #id = cursor.fetchall()
-                        self.listID.append(str(ReturnDB[0].get('id'))) 
-                        #userID = str(id[0].get('id')) 
+                        self.listID.append(str(ReturnDB[0].get('id')))
+                        user = self.listID[index]
 
-                        #teste = json.dumps(id, indent =4)
-                        #teste = 'O id do usuário é '
-                        #index = self.listSOCK.index(cliente)
-                        #server.comandoSOCK(index, teste) 
-                    
+                        #================================= Checar se a frequencia deve ser mantida e premiar =================================
+                        sqlQuery = 'SELECT DATE(lastConnection) AS lastConnectionYesterday FROM COLLECTOR WHERE id = %s'
+                        cursor.execute(sqlQuery, (user))
+                        oldDateResponse = cursor.fetchall()
+                        oldLastConnection = oldDateResponse[0].get('lastConnectionYesterday')
+                        sqlQuery = 'SELECT DATE(DATE_SUB(NOW(), INTERVAL 1 DAY)) AS newLastConnection'
+                        cursor.execute(sqlQuery)
+                        newDateResponse = cursor.fetchall()
+                        newLastConnection = newDateResponse[0].get('newLastConnection')
+                        print(str(oldLastConnection) + '     ' + str(newLastConnection))
+                        if(oldLastConnection == newLastConnection):
+                            sqlQuery = 'UPDATE COLLECTOR SET coins = coins + accessFrequency+2, accessFrequency = accessFrequency+1, lastConnection = %s WHERE id = %s'
+                            cursor.execute(sqlQuery, (newLastConnection, user))
+                            # sqlQuery = 'UPDATE collector SET coins = coins + 2*accessFrequency, accessFrequency = accessFrequency + 1 WHERE email = new.email;'
+                        else:
+                            sqlQuery = 'UPDATE COLLECTOR SET accessFrequency = 0 WHERE id = %s'
+                            cursor.execute(sqlQuery, (user))
+
+                        con.commit()
+                        #================================= Checar se a frequencia deve ser mantida e premiar =================================
 
                 elif(qtdRows == 0):  
                     mensagem = "Usuário não cadastrado"
@@ -129,7 +144,7 @@ class Server:
             
             elif(mensagem == 'printAlbum'):
                 index = self.listSOCK.index(cliente) 
-                user = self.listId[index]
+                user = self.listID[index]
                 sqlQuery = "SELECT * FROM Album A JOIN Collection_Cards B ON A.id = B.idAlbum\
                     JOIN Card C ON C.id = B.idCard\
                     JOIN Collector D ON A.id = D.idAlbum\
@@ -187,7 +202,7 @@ class Server:
                     sqlQuery = "DELETE FROM Store_Cards WHERE Store_Cards.id = %s" #remove a oferta da loja, pois ela ja foi consumida
                     cursor.execute(sqlQuery, (idOferta))
                         #falta adicionar o dinheiro ao usuário que estava vendendo caso o campo idCollector seja != NULL
-                    cursor.commit()
+                    con.commit()
                 else:
                     mensagem = 'quantidade de moedas insuficiente'
                     server.comandoSOCK(index,mensagem)
