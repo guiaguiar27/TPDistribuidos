@@ -1,5 +1,6 @@
 from .album import album 
 from .inventory import inventory  
+import ast 
 
 class collector:  
 
@@ -44,11 +45,28 @@ class collector:
         print("Password: " + self.password) 
 
 
+    def showCardFI(self,name, idC, description): 
+        print("----Informacoes da carta----")
+        print("ID: ",idC) 
+        print("Nome: ",name)
+        print("descricao: ",description) 
+        print("----------------------------")  
+        
     def show_album(self,client):  
 
         firstRequest = "printAlbum" 
         client.sock.send(firstRequest.encode()) 
-        response = client.sock.recv(1024).decode()         
-        print(response)
-
+        FirstResponse = client.sock.recv(1024).decode()         
+        if FirstResponse != None:   
+                response = ast.literal_eval(FirstResponse)
+                for i in range(len(response)):
+                    idc  =  response[i].get('CARD.id')
+                    description = response[i].get('description') 
+                    name = response[i].get('name') 
+                    self.showCardFI(name, idc, description)
+    
+    def exchange(self,client): 
+        print("Entre com o id da carta que deseja trocar: ")
+        
+        pass
     
