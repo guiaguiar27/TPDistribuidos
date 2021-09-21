@@ -4,6 +4,7 @@ sys.path.insert(0, '../src')
 
 #from client import Client 
 from src.collector import collector 
+import ast
 
 
 class menuinit:
@@ -11,22 +12,67 @@ class menuinit:
 
         self._ip = ip
         self._port = port  
+    
+    def colar(self,client):   
+        client.sock.send("ColarFigura".encode()) 
+          
+        print("Colada")
+
+    def exchange(self, client): 
+        tr = "troca"
+        client.sock.send(tr.encode())  
+         
+        print("Digite 1 para ativar troca\n 2 para analisar trocas pendentes") 
+        ans = int(input())   
+        if ans == 1:  
+            # criar oferta 
+            client.sock.send(str(ans).encode())       
+            idCardTrade = input("Entre com o id da carta que deseja trocar:") 
+            client.sock.send(idCardTrade.encode())   
+            idCardReceive = input("Entre com o id da carta que deseja receber: ")
+            client.sock.send(idCardReceive.encode()) 
+
+            print(client.sock.recv(1024).decode()) 
+        else:  
+            client.sock.send(str(ans).encode())        
+            response = client.sock.recv(1024).decode()  
+            if response != None:   
+                
+                l = ast.literal_eval(response) 
+                for i in range(len(l)):
+                    print(l[i].get('exId'))
+
+                ex = input(("Digite o id da troca que deseja operar:")) 
+                ex = int(ex) - 1 
+
+                client.sock.send(str(ex).encode())   
+                
+                response = client.sock.recv(1024).decode() 
+                print(response) 
+
+                ans = int(input("")) 
+                client.sock.send(str(ans).encode()) 
+
+                finalResponse = client.sock.recv(1024).decode() 
+                print(finalResponse)
+                        
+            # analisar ofertas pendentes 
 
     def shop(self,client): 
         req = "loja" 
         
         client.sock.send(req.encode())  
-        response = client.sock.recv(1024).decode()  
-        print(response)  
-
-        if response != None: 
-            for i in range(len(response)):
-                price  =  response[i].get('price')
-                description = response[i].get('description') 
-                nameCard = response[i].get('name') 
-                print("----Informacoes da carta----")
-                print("{} - {} - {} - {}".format(i,nameCard,price,description)) 
-                print("----------------------------")
+        FirstResponse = client.sock.recv(1024).decode()  
+        if FirstResponse != None:   
+                
+                response = ast.literal_eval(FirstResponse)
+                for i in range(len(response)):
+                    price  =  response[i].get('price')
+                    description = response[i].get('description') 
+                    nameCard = response[i].get('name') 
+                    print("----Informacoes da carta----")
+                    print("{} - {} - {} - {}".format(i,nameCard,price,description)) 
+                    print("----------------------------")
 
         oferta = int(input("Entre com o valor da oferta:")) 
         client.sock.send(str(oferta).encode()) 
@@ -103,9 +149,9 @@ class menuinit:
     def menu(self, User,client): 
         print("---------------MENU------------------")  
         opion = 0  
-        while opion != 5:
+        while opion != 6:
             print("Pagina menu - User: {}".format(User.name)) 
-            option = int(input("1 - Acessar perfil \n2 - Acessar album \n3 - Acessar inventario \n4 - Acessar Loja \n 5 - Sair \n")) 
+            option = int(input("1 - Acessar perfil \n2 - Acessar album \n3 - Acessar inventario \n4 - Acessar Loja \n 5 - Troca \n 6 - Colar No Album\n")) 
             if option == 1:
                 User.show_collector()
             elif option == 2:   
@@ -122,8 +168,13 @@ class menuinit:
                 self.shop(client)
 
             elif option == 5:  
-                print("---------------SAIR------------------")  
-                sys.exit()
+                print("---------------TROCA------------------")  
+                self.exchange(client) 
+            elif option == 6:   
+                print("---------------TROCA------------------")  
+                self.colar(client)
+
+                #sys.exit()
 
 
     #pagina inicial
