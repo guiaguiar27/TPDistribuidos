@@ -8,6 +8,89 @@ import signal
 import MySQLdb # para o MySQL
 from pyngrok import ngrok
 import json
+import ast
+
+#============================================ criar troca ============================================
+# INSERT INTO Exchanges (idCollectorOwner, idCollectorTarget, idCard, idCardReceived) VALUES ('IdDoUsuarioQueCriouATroca', 'IdDoUsuarioQueVaiReceberAOferta', 'IdDoCardASerTrocado', 'idDoCardDesejadoEmTroca')
+#============================================ criar troca ============================================
+
+
+#============================================ Listar trocas criadas e trocas pendentes ============================================
+# SELECT B.email AS CollectorOwnerEmail, C.email AS CollectorTargetEmail, D.name AS CardTraded, E.name AS CardReceived  FROM Exchanges A JOIN Collector B ON B.id = A.idCollectorOwner JOIN Collector C ON C.id = A.idCollectorTarget JOIN CARD D ON D.id = A.idCard JOIN CARD E ON E.id = A.idCardReceived WHERE A. idCollectorOwner = 'idUsuarioNoMenu' OR A.idCollectorTarget = 'idUsuarioNoMenu'
+
+#vamos pegar tudo e checar se o id do usuario está no idCollectorOwner ou no idCollectorTarget
+    #se estiver no collector owner
+        #opção de retirar a proposta de troca
+        #Executar a parte de 'troca aceita' tanto para target quanto para oferta, sem a parte dos deletes
+        #DELETE FROM Exchange WHERE id = 'idDaProposta Negada'
+    #se estiver no collector target
+        #opção de aceitar a troca
+#============================================ Listar trocas criadas e trocas pendentes ============================================
+
+#============================================ Troca Aceita ============================================
+
+#se target
+#SELECT * FROM Inventory_Cards WHERE idCollector = 'idDoUsuario' AND idCard = 'idCardDaOfertaAceita'
+    # Se número de linhas > 0
+        # UPDATE Inventory_Cards SET quantity = quantity+1 Where idCollector = 'idDoUsuario' AND idCard = 'idCardDaOfertaAceita'
+    # Se número de linhas = 0
+        # INSERT INTO Inventory_Cards (idCard, quantity, idCollector) VALUES ('idCardDaOfertaAceita', 1, 'idDoUsuario')
+    
+#SELECT quantity FROM Inventory_Cards WHERE idCollector = 'idDoUsuario' AND idCard = 'idDaCartaGiven'
+    #Se quantity = 1
+        # DELETE FROM Inventory_Cards WHERE idCollector = 'idDoUsuario' AND idCard = 'idDaCartaGiven'
+    #Se quantity > 1
+        # UPDATE Inventory_Cards SET quantity = quantity-1 WHERE idCollector = 'idDoUsuario' AND idCard = 'idDaCartaGiven'
+
+
+#se criador da oferta
+#SELECT id FROM COLLECTOR WHERE email = 'emailOwner'
+#pega o id da seleção acima e
+#SELECT * FROM Inventory_Cards WHERE idCollector = 'idDoOwner' AND idCard = 'idCardDaRecebida'
+    # Se número de linhas > 0
+        # UPDATE Inventory_Cards SET quantity = quantity+1 WHERE idCollector = 'idDoOwner' AND idCard = 'idCardDaRecebida'
+    # Se número de linhas = 0
+        # INSERT INTO Inventory_Cards (idCard, quantity, idCollector) VALUES ('idCardDaRecebida', 1, 'idDoOwner')
+        
+#SELECT quantity FROM Inventory_Cards WHERE idCollector = 'idDoOwner' AND idCard = 'idDaCartaGiven'
+    #Se quantity = 1
+        # DELETE FROM Inventory_Cards WHERE idCollector = 'idDoOwner' AND idCard = 'idDaCartaGiven'
+    #Se quantity > 1
+        # UPDATE Inventory_Cards SET quantity = quantity-1 WHERE idCollector = 'idDoOwner' AND idCard = 'idDaCartaGiven'
+
+
+
+
+#Pegar email do collectorOwner
+#SELECT A.id FROM Inventory_Cards A JOIN Collector B ON A.idCollector = B.id WHERE A.idCollector = 'idCollectorOwner' AND B.email = 'emailCollectorOwner'
+#pego ele e
+#SELECT * FROM 
+
+#============================================ Troca Aceita ============================================
+
+
+#============================================ Ver email dos Usuários ====================================
+#Retorna todos os dados mas só mostra para o cliente o email dos jogadores
+#SELECT * FROM COLLECTOR
+#Quando email de usuario for selecionado vai aparecer a opção "ver album"
+#A query abaixo vai exibir as cartas faltantes no album do usuário selecionado pelo email
+#SELECT name, description FROM CARD A JOIN Collection_Card B Where B.idAlbum = 'IdDoAlbumArmazenadoNoSelectDeCima' AND A.id != B.idCard
+
+#============================================ Ver email dos Usuários ====================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # host = "seu ip" 
 # port = 9001
@@ -260,22 +343,240 @@ class Server:
                 # get figure id  
                 figure_id = '1'    
                 user = self.listSOCK.index(cliente)
+                sqlQuery = "Select idAlbum FROM Collector WHERE id = %s"
+                cursor.execute(sqlQuery, str(user))
+                response = cursor.fetchall()
+                idAlbum = response[0].get('idAlbum')
+                print("o id do album é: " + idAlbum)
+                sqlQuery = "SELECT * FROM Card A WHERE A.id NOT IN (SELECT id FROM Collection_cards WHERE idAlbum = %s)"
+                cursor.execute(sqlQuery, (idAlbum))
+                response = cursor.fetchall()
+                requiredCards = response
+
+                idCardToSticker = cliente.recv(1024).decode()
+                sqlQuery = "SELECT * FROM Inventory_Cards WHERE idColletor = %s AND idCard = %s"
+                cardExist = cursor.execute(sqlQuery, (user, idCardToSticker))
+                if cardExist > 0:
+                    if cardExist > 1:
+                        sqlQuery = "INSERT INTO Collection_Cards (idAlbum, idCard) Values (%s,%s)"
+                        cursor.execute(sqlQuery, (idAlbum, idCardToSticker))
+                        sqlQuery = "UPDATE Inventory_Cards Set quantity quantity - 1 WHERE idCard = %s AND idCollector = %s"
+                        cursor.execute(sqlQuery, (idCardToSticker, user))
+
+                    else:
+                        sqlQuery = "INSERT INTO Collection_Cards (idAlbum, idCard) Values (%s,%s)"
+                        cursor.execute(sqlQuery, (idAlbum, idCardToSticker))
+                        sqlQuery = "DELETE FROM Inventory_Cards WHERE idCard = %s AND idCollector = %s"
+                        cursor.execute(sqlQuery, (idCardToSticker, user))
+                    con.commit()
+                else:
+                    print('Quantidade de cartas insuficiente')
+
+
+
                 
-                # obtem a quantidade de figuras coladas no album
-                quantityStickeredFromAlbum = "SELECT quantityStickeredCards JOIN Album ON Album.id = Collector.idAlbum WHERE id = %s" 
-                cursor.execute(quantityStickeredFromAlbum, (user))  
-                # atualiza 
-                sqlQuery = """ UPDATE Album SET quantityStickeredCards = %s JOIN Album ON Album.id = Collector.idAlbum
-                WHERE (SELECT idAlbum JOIN Collector ON Album.id = Collector.id  
-                WHERE Album.id = Collector.idalbum) = %s """
-                # atualiza  
-                # inserir  no collection cards  (indicando o id da carta e o id do album )
-                cursor.execute(sqlQuery,(quantityStickeredFromAlbum, user))
-                # 
-                delete = "DELETE FROM tabela WHERE JOIN CARD ON INVENTORY_CARDS.idCard = CARD.id\
-                    JOIN COLLECTOR ON  INVENTORY_CARDS.idCollector = %s\
-                WHERE INVENTORY_CARDS.idCard = %s" 
-                cursor.execute(delete,(user,figure_id))
+                # # obtem a quantidade de figuras coladas no album
+                # quantityStickeredFromAlbum = "SELECT quantityStickeredCards JOIN Album ON Album.id = Collector.idAlbum WHERE id = %s" 
+                # cursor.execute(quantityStickeredFromAlbum, (user))  
+                # # atualiza 
+                # sqlQuery = """ UPDATE Album SET quantityStickeredCards = %s JOIN Album ON Album.id = Collector.idAlbum
+                # WHERE (SELECT idAlbum JOIN Collector ON Album.id = Collector.id  
+                # WHERE Album.id = Collector.idalbum) = %s """
+                # # atualiza  
+                # # inserir  no collection cards  (indicando o id da carta e o id do album )
+                # cursor.execute(sqlQuery,(quantityStickeredFromAlbum, user))
+                # # 
+                # delete = "DELETE FROM tabela WHERE JOIN CARD ON INVENTORY_CARDS.idCard = CARD.id\
+                #     JOIN COLLECTOR ON  INVENTORY_CARDS.idCollector = %s\
+                # WHERE INVENTORY_CARDS.idCard = %s" 
+                # cursor.execute(delete,(user,figure_id)) 
+
+            elif(mensagem == "troca"):  
+                print('entrei na troca')
+                user = self.listID[index]  
+                index = self.listSOCK.index(cliente)
+                
+                choice = cliente.recv(1024).decode()
+                print("o choice é: " + str(choice))
+                if choice == "1": 
+                    #criar oferta  
+                    print('entrei no if')
+                    # usuario envia o id da carta que quer enviar
+                    idCardtoSend = cliente.recv(1024).decode() 
+                    #usuario envia id da carta que quer receber
+                    idCardToReceive = cliente.recv(1024).decode()   
+                    # criação de uma nova oferta
+                    
+                    #Retorna todos os dados mas só mostra para o cliente o email dos jogadores
+                    # getAllEmails = """SELECT * FROM COLLECTOR""" 
+                    # cursor.execute(getAllEmails)  
+                    # getAllEmails = cursor.fetchall() 
+                    # getEmailReturn = json.dumps(getAllEmails, indent =4, sort_keys=True, default=str)
+                    # server.comandoSOCK(index,getEmailReturn)
+
+                    # emailSelected = cliente.recv(1024).decode()  
+                    
+                    
+                    # idAlbum = list(filter(lambda d: d['email'] == emailSelected,getAllEmails))
+                    #Quando email de usuario for selecionado vai aparecer a opção "ver album"
+                    #A query abaixo vai exibir as cartas faltantes no album do usuário selecionado pelo email
+                    #SELECT name, description FROM CARD A JOIN Collection_Card B Where B.idAlbum = 'IdDoAlbumArmazenadoNoSelectDeCima' AND A.id != B.idCard
+                    
+                    print('entrei no if')
+                    firstSQL = """INSERT INTO Exchanges (idCollectorOwner, idCollectorTarget, idCard, idCardReceived) 
+                                   VALUES (%s, %s, %s, %s)""" 
+                    idTeste = 3 
+                    cursor.execute(firstSQL, (user,idTeste,idCardtoSend, idCardToReceive))  
+                    con.commit()
+                    send = "Oferta criada" 
+                    print(send)
+                    server.comandoSOCK(index, send) 
+
+
+
+                else: 
+                    # observar a troca 
+                    # o usuario podera aceitar ou negar uma oferta de troca  caso seja o solicitado  
+                    # o usuario podera manter ou cancelar uma oferta de troca caso seja o solicitante 
+
+                 
+                    showExchange = """SELECT  B.id AS OwnerId,  
+                                            C.id AS collectorID,  
+                                            B.email AS CollectorOwnerEmail,  
+                                            C.email AS CollectorTargetEmail,  
+                                            D.name AS CardTraded,  
+                                            E.name AS CardReceived,  
+                                            D.id AS CardTradedId,  
+                                            E.id AS CardReceivedId,  
+                                            D.id AS CardTradedId, 
+                                            A.id AS exId   
+                                FROM Exchanges A  
+                                JOIN Collector B ON B.id = A.idCollectorOwner  
+                                JOIN Collector C ON C.id = A.idCollectorTarget 
+                                JOIN CARD D ON D.id = A.idCard  
+                                JOIN CARD E ON E.id = A.idCardReceived  
+                                WHERE A. idCollectorOwner = %s OR A.idCollectorTarget = %s """
+                    cursor.execute(showExchange,(user, user))  
+                    showExchangeReturn = cursor.fetchall() 
+                    showExchangeReturn = json.dumps(showExchangeReturn, indent =4, sort_keys=True, default=str)
+                    server.comandoSOCK(index,showExchangeReturn)
+                    
+                    i = int(cliente.recv(1024).decode()) 
+                    # o for vai estar no menu for i in range(len(showexchangeReturn)): 
+                    # o usuario, por meio do menu, retorna em qual exchange irá retornar
+
+
+                    idOwner = ast.literal_eval(showExchangeReturn)[i].get('OwnerId')
+                    idCollector = ast.literal_eval(showExchangeReturn)[i].get('collectorID')
+
+                    idCardTraded = ast.literal_eval(showExchangeReturn)[i].get('CardTradedId')
+                    idCardReceived = ast.literal_eval(showExchangeReturn)[i].get('CardReceivedId') 
+                    idExchange = ast.literal_eval(showExchangeReturn)[i].get('exId') 
+                    print('O id exchange é: ' + str(idExchange))
+                    print('antes do if')
+                    print(str(user) + " o outro id é " + str(idOwner))
+                    if str(user) == str(idOwner):   
+                        print('entrei no if')
+                        # caso o cliente no momento seja o solicitante da troca
+                        send = "Retirar proposta - 1    Manter proposta - 2"
+                        print(send)
+                        server.comandoSOCK(index, send) 
+                        ans = cliente.recv(1024).decode() 
+                            
+                        if ans == '1':
+                            print('entramos no if')
+                            sqlCheckCardInInventory = "SELECT * FROM Inventory_Cards WHERE idCollector = %s AND idCard = %s"
+                            cardExist = cursor.execute(sqlCheckCardInInventory, (user, idCardTraded))
+                            print('o cardExist tem valor ' + str(cardExist)) 
+                            
+                            if cardExist > 0: # Se número de linhas > 0
+                                sqlQuery = "UPDATE Inventory_Cards SET quantity = quantity+1 WHERE idCollector = %s AND idCard = %s"
+                                cursor.execute(sqlQuery, (user, idCardTraded))
+                                sqlQuery= "DELETE FROM Exchanges WHERE id = %s"
+                                cursor.execute(sqlQuery, (str(idExchange)))
+                                    # UPDATE Inventory_Cards SET quantity = quantity+1 Where idCollector = 'idDoUsuario' AND idCard = 'idCardDaOfertaAceita'
+                            else:# Se número de linhas = 0
+                                sqlQuery = "INSERT INTO Inventory_Cards (idCard, quantity, idCollector) VALUES (%s, 1, %s)"
+                                cursor.execute(sqlQuery, (str(idCardTraded), user))
+                                sqlQuery= "DELETE FROM Exchanges WHERE id = %s"
+                                cursor.execute(sqlQuery, (str(idExchange)))
+                            
+                            con.commit() 
+                            send = "Proposta Retirada!"
+                            server.comandoSOCK(index, send)
+                            
+                        else:    
+                            send = "Proposta Mantida!"
+                            server.comandoSOCK(index, send)
+                            
+                            
+
+                                
+                    elif str(user) == str(idCollector):    
+
+                                # caso o cliente no momento seja o solicitado da troca 
+                        send = "Aceitar troca - 1\nNegar troca - 2"
+                        server.comandoSOCK(index, send) 
+                            
+                        ans = cliente.recv(1024).decode() 
+                            
+                        if ans == '1':
+                            #se target
+                            sqlCheckCardInInventory = "SELECT * FROM Inventory_Cards WHERE idCollector = %s AND idCard = %s"
+                            cardExist = cursor.execute(sqlCheckCardInInventory, (user, idCardTraded))
+                            if cardExist > 0: # Se número de linhas > 0
+                                sqlQuery = "UPDATE Inventory_Cards SET quantity = quantity+1 Where idCollector = %s AND idCard = '%s"
+                                cursor.execute(sqlQuery, (user, str(idCardTraded)))
+                            else: # Se número de linhas = 0
+                                sqlQuery = "INSERT INTO Inventory_Cards (idCard, quantity, idCollector) VALUES (%s, 1, %s)"
+                                cursor.execute(sqlQuery,(idCardTraded, user)) 
+                                
+                            #se criador da oferta
+                            sqlCheckCardInInventory = "SELECT * FROM Inventory_Cards WHERE idCollector = %s AND idCard = %s"
+                            cardExist = cursor.execute(sqlCheckCardInInventory, (str(idOwner), str(idCardReceived)))
+                            if cardExist > 0: # Se número de linhas > 0
+                                sqlQuery = "UPDATE Inventory_Cards SET quantity = quantity+1 WHERE idCollector = %s AND idCard = %s"
+                                cursor.execute(sqlQuery, (str(idOwner), str(idCardReceived)))
+                            else: # Se número de linhas = 0
+                                sqlQuery = "INSERT INTO Inventory_Cards (idCard, quantity, idCollector) VALUES (%s, 1, %s)"
+                                cursor.execute(sqlQuery, (str(idCardReceived), str(idOwner)))
+                            sqlQuery = "DELETE FROM Exchanges WHERE id = %s"
+                            cursor.execute(sqlQuery, (str(idExchange)))
+                            con.commit()  
+                            
+                            send = "Troca feita!"
+                            server.comandoSOCK(index, send) 
+                        else:    
+                            send = "Troca Negada!"
+                            server.comandoSOCK(index, send)
+                            
+
+                        sqlInventarioUpdate1 = """SELECT * FROM Inventory_Cards 
+                                    WHERE idCollector = %s  AND idCard = %s """ 
+                        qtRows = cursor.execute(sqlInventarioUpdate1, (user, str(idCardReceived))) 
+                        if qtRows > 0: 
+                            
+                            update = """UPDATE Inventory_Cards SET quantity = quantity+1 Where idCollector = %s AND idCard = %s """ 
+                            cursor.execute(update,(user, str(idCardReceived) ))
+                        else:  
+                            
+                            insert = """  INSERT INTO Inventory_Cards (idCard, quantity, idCollector) VALUES ( %s , 1, %s) """  
+                            cursor.execute(insert,(str(idCardReceived), user)) 
+                        
+                        sqlinventarioUpdate2 = """SELECT quantity  
+                                                FROM Inventory_Cards  
+                                                WHERE idCollector = %s AND idCard = %s """  
+                        qtRows = cursor.execute(sqlinventarioUpdate2,(user, str(idCardTraded))) 
+                        
+                        if qtRows == 1: 
+                            deleteNoInventario = """DELETE FROM Inventory_Cards  
+                                                    WHERE idCollector = %s AND idCard = %s """ 
+                            cursor.execute(deleteNoInventario,(user, idCardTraded)) 
+                        elif qtRows > 1: 
+                            updateInventario = """UPDATE Inventory_Cards SET quantity = quantity-1 WHERE idCollector = %s AND idCard = %s """ 
+                            cursor.execute(updateInventario,(user, idCardTraded))
+                    
+                    
                                 
                 
             # elif(mensagem == 'comprar'):
