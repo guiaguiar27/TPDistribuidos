@@ -1,5 +1,5 @@
 from .card import card  
-import ast
+import json  
 
 class inventory: 
     def __init__(self): 
@@ -19,17 +19,30 @@ class inventory:
         print("----------------------------") 
         
     def getInventory(self,client): 
+        
         FirstRequest = "printInventario" 
         client.sock.send(FirstRequest.encode())
-        FirstResponse = client.sock.recv(1024).decode() 
-        #print(response.decode())  
-        if FirstResponse != None:   
-                response = ast.literal_eval(FirstResponse)
-                for i in range(len(response)):
-                    idc  =  response[i].get('CARD.id')
-                    description = response[i].get('description') 
-                    name = response[i].get('name') 
-                    self.showCardFI(name, idc, description)
+        FirstResponse = client.sock.recv(6144).decode()  
+        #print(FirstResponse) 
+
+        response = FirstResponse.replace("'", "\"")  
+        FinalResponse = json.loads(response) 
+        
+        for dictionary in FinalResponse:
+            idc  =  dictionary.get('CARD.id') 
+            description = dictionary.get('description') 
+            name = dictionary.get('name') 
+            self.showCardFI(name, idc, description)
+
+
+        # for i in range(len(response)):
+        #     idc  =  response[i].get('CARD.id') 
+        #     print(idc)
+        #     description = response[i].get('description') 
+        #     print(description)
+        #     name = response[i].get('name') 
+        #     print(name)
+        #     #self.showCardFI(name, idc, description)
 
             
        
