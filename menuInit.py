@@ -4,7 +4,8 @@ sys.path.insert(0, '../src')
 
 #from client import Client 
 from src.collector import collector 
-import ast
+import json 
+import random
 
 
 class menuinit:
@@ -12,13 +13,42 @@ class menuinit:
 
         self._ip = ip
         self._port = port  
-    
-    def colar(self,client):   
-        client.sock.send("ColarFigura".encode()) 
-          
-        print("Colada")
+    def buyPacket(self): 
+        packt = [x for x in range(4)]
+        credit = 4
+        print("Preco pacote 4:")  
+        print("Saldo em conta: {}".format(credit)) 
+        ans = int(input("Digite a quantidade de pacotes que deseja comprar")) 
+        
+        for i in range(ans):  
+            pass
 
-    def exchange(self, client): 
+
+    def colar(self,client):    
+
+        print("---------------COLAR------------------")   
+        client.sock.send("ColarFigura".encode()) 
+        print("Cartas faltantes:") 
+        response = client.sock.recv(6144).decode() 
+        response = response.replace("'", "\"") 
+        FinalResponse = json.loads(response) 
+        for Dictionary in FinalResponse: 
+            print("------Informacoes da carta-----")
+            print(" {} - {} - {}".format(Dictionary.get('id'),Dictionary.get('name'),Dictionary.get('description'))) 
+            print("----------------------------")
+        
+        getId = int(input("Digite o ID da carta que deseja colar:")) 
+        client.sock.send(str(getId).encode()) 
+        
+        #print(client.sock.recv(6144).decode())   
+       
+        print("Colada")  
+
+        print("Entre com o id da carta que deseja colar: ")
+
+    def exchange(self, client):  
+
+        print("---------------TROCA------------------")   
         tr = "troca"
         client.sock.send(tr.encode())  
          
@@ -38,12 +68,14 @@ class menuinit:
             response = client.sock.recv(1024).decode()  
             if response != None:   
                 
-                l = ast.literal_eval(response) 
-                for i in range(len(l)):
-                    print(l[i].get('exId'))
+                response = response.replace("'", "\"") 
+                FinalResponse = json.loads(response)
+                
+                for i in range(len(FinalResponse)):
+                    print("Troca ativa - ID: ",FinalResponse[i].get('exId'))
 
                 ex = input(("Digite o id da troca que deseja operar:")) 
-                ex = int(ex) - 1 
+                ex = int(ex) - 2 
 
                 client.sock.send(str(ex).encode())   
                 
@@ -59,22 +91,31 @@ class menuinit:
             # analisar ofertas pendentes 
 
     def shop(self,client): 
+        
+
+        print("---------------LOJA------------------")   
+
         req = "loja" 
         
         client.sock.send(req.encode())  
-        FirstResponse = client.sock.recv(1024).decode()  
-        if FirstResponse != None:   
-                
-                response = ast.literal_eval(FirstResponse)
-                for i in range(len(response)):
-                    price  =  response[i].get('price')
-                    description = response[i].get('description') 
-                    nameCard = response[i].get('name') 
-                    print("----Informacoes da carta----")
-                    print("{} - {} - {} - {}".format(i,nameCard,price,description)) 
-                    print("----------------------------")
+        FirstResponse = client.sock.recv(6144).decode()  
+        #print(FirstResponse) 
+        response = FirstResponse.replace("'", "\"") 
+        FinalResponse = json.loads(response)
+        # if FirstResponse != None:   
+        print(response)
+        for i in FinalResponse:
+            price  =  i.get('price')
+            description = i.get('description') 
+            nameCard = i.get('carta')  
+            
+            print("----Informacoes da oferta----")
+            print(" {} - {} - {}".format(nameCard,price,description)) 
+            print("----------------------------")
 
-        oferta = int(input("Entre com o valor da oferta:")) 
+        oferta = int(input("Entre com o id da oferta ou -2 para sair:")) 
+        if oferta == -2: 
+            return 
         client.sock.send(str(oferta).encode()) 
         response = client.sock.recv(1024).decode() 
         
@@ -171,8 +212,11 @@ class menuinit:
                 print("---------------TROCA------------------")  
                 self.exchange(client) 
             elif option == 6:   
-                print("---------------TROCA------------------")  
-                self.colar(client)
+                print("---------------COLAR------------------")  
+                self.colar(client)  
+            elif option == 7:  
+                print("---------------COMPRRAR PACOTE------------------")
+
 
                 #sys.exit()
 
