@@ -58,14 +58,6 @@ import ast
     #Se quantity > 1
         # UPDATE Inventory_Cards SET quantity = quantity-1 WHERE idCollector = 'idDoOwner' AND idCard = 'idDaCartaGiven'
 
-
-
-
-#Pegar email do collectorOwner
-#SELECT A.id FROM Inventory_Cards A JOIN Collector B ON A.idCollector = B.id WHERE A.idCollector = 'idCollectorOwner' AND B.email = 'emailCollectorOwner'
-#pego ele e
-#SELECT * FROM 
-
 #============================================ Troca Aceita ============================================
 
 
@@ -231,7 +223,7 @@ class Server:
             elif(mensagem == 'printAlbum'):
                 index = self.listSOCK.index(cliente) 
                 user = self.listID[index]
-                sqlQuery = "SELECT * FROM Album A JOIN Collection_Cards B ON A.id = B.idAlbum\
+                sqlQuery = "SELECT C.id, C.name, C.description FROM Album A JOIN Collection_Cards B ON A.id = B.idAlbum\
                     JOIN Card C ON C.id = B.idCard\
                     JOIN Collector D ON A.id = D.idAlbum\
                     JOIN Collector E ON E.idAlbum = A.id WHERE E.id = %s"
@@ -256,12 +248,13 @@ class Server:
                 
                 print('o id do usuario é: ' + str(idUser))
                 idOferta = cliente.recv(1024).decode()
-                    #sqlQuery = "SELECT"
+                #sqlQuery = "SELECT"
                 sqlQuery = "SELECT coins FROM COLLECTOR WHERE id = %s"
                 cursor.execute(sqlQuery, (idUser))
                 consulta = cursor.fetchall()
                 qtdCoins = consulta[0].get('coins')
                 sqlQuery = "SELECT * FROM Store_Cards WHERE id = %s"
+                print("id da oferta é: " + str(idOferta))
                 cursor.execute(sqlQuery, (idOferta))
                 consulta2 = cursor.fetchall()
                 precoOferta = consulta2[0].get('price')
@@ -270,8 +263,9 @@ class Server:
                     sqlQuery = "UPDATE Collector SET coins = %s WHERE id = %s" #debita a quantidade de moedas pagas na oferta
                     cursor.execute(sqlQuery, (qtdCoins, idUser))
                     sqlQuery = "SELECT * FROM Inventory_Cards WHERE idCard = %s" #pega a quantidade de cartas desse tipo no inventário do comprador
-                    qtdCards = cursor.execute(sqlQuery, (consulta2[0].get('idCards')))
-                    inventoryCardInfo = cursor.fetchAll()
+                    print("o id da carta é: " + str(consulta2[0].get('idCards')))
+                    qtdCards = cursor.execute(sqlQuery, str(consulta2[0].get('idCards')))
+                    inventoryCardInfo = cursor.fetchall()
                     if(qtdCards > 0):
                         sqlQuery = "UPDATE Inventory_Cards SET quantity = %s" #aumenta a quantidade de cartas do mesmo tipo caso o comprador ja possua a carta no inventário
                         cursor.execute(sqlQuery, str(inventoryCardInfo[0].get('quantity')+1))
@@ -279,18 +273,22 @@ class Server:
                         sqlQuery = "INSERT INTO Inventory_Cards (idCard, quantity, idCollector) VALUES (%s, 1, %s)" #insere a carta no inventário do comprador caso ele não possua uma instancia dela no inventário
                         cursor.execute(sqlQuery, (consulta2[0].get('idCards') ,idUser))
                     
-                    sqlQuery = "SELECT coins FROM COLLECTOR WHERE COLLECTOR.id = %s" #pega a quantidade de moedas do vendedor, para calcular o novo valor
-                    cursor.execute(sqlQuery, (consulta2[0].get('idCollector')))
-                    consultaCoins = cursor.fetchall()
-                    coinsVendedor = consultaCoins[0].get('coins')
-                    coinsVendedor = coinsVendedor + precoOferta
-                    sqlQuery = "UPDATE COLLECTOR SET coins = %s WHERE id = %s" #paga o vendedor da oferta
-                    cursor.execute(sqlQuery, (coinsVendedor, consulta2[0].get('idCollector')))
+                    if(consulta2[0].get('idCollector') != None):
+                        sqlQuery = "SELECT coins FROM COLLECTOR WHERE id = %s" #pega a quantidade de moedas do vendedor, para calcular o novo valor
+                        print("aquiiii: " + str(consulta2[0]))
+                        cursor.execute(sqlQuery, (consulta2[0].get('idCollector')))
+                        consultaCoins = cursor.fetchall()
+                        coinsVendedor = consultaCoins[0].get('coins')
+                        coinsVendedor = coinsVendedor + precoOferta
+                        sqlQuery = "UPDATE COLLECTOR SET coins = %s WHERE id = %s" #paga o vendedor da oferta
+                        cursor.execute(sqlQuery, (coinsVendedor, consulta2[0].get('idCollector')))
 
                     sqlQuery = "DELETE FROM Store_Cards WHERE Store_Cards.id = %s" #remove a oferta da loja, pois ela ja foi consumida
                     cursor.execute(sqlQuery, (idOferta))
                         #falta adicionar o dinheiro ao usuário que estava vendendo caso o campo idCollector seja != NULL
                     con.commit()
+                    mensagem = 'Compra realizada com sucesso!'
+                    server.comandoSOCK(index,mensagem)
                 else:
                     mensagem = 'quantidade de moedas insuficiente'
                     server.comandoSOCK(index,mensagem)
@@ -342,19 +340,23 @@ class Server:
                 
                 # get figure id  
                 figure_id = '1'    
-                user = self.listSOCK.index(cliente)
+                index = self.listSOCK.index(cliente) 
+                user = self.listID[index]
                 sqlQuery = "Select idAlbum FROM Collector WHERE id = %s"
+                print(str(user))
                 cursor.execute(sqlQuery, str(user))
                 response = cursor.fetchall()
+                print(str(response))
                 idAlbum = response[0].get('idAlbum')
-                print("o id do album é: " + idAlbum)
-                sqlQuery = "SELECT * FROM Card A WHERE A.id NOT IN (SELECT id FROM Collection_cards WHERE idAlbum = %s)"
-                cursor.execute(sqlQuery, (idAlbum))
+                sqlQuery = "SELECT * FROM Card A WHERE A.id NOT IN (SELECT idCard FROM Collection_cards WHERE idAlbum = %s)"
+                cursor.execute(sqlQuery, str(idAlbum))
                 response = cursor.fetchall()
                 requiredCards = response
-
+                requiredCards = json.dumps(requiredCards, indent =4, sort_keys=True, default=str)
+                index = self.listSOCK.index(cliente) 
+                server.comandoSOCK(index,requiredCards)
                 idCardToSticker = cliente.recv(1024).decode()
-                sqlQuery = "SELECT * FROM Inventory_Cards WHERE idColletor = %s AND idCard = %s"
+                sqlQuery = "SELECT * FROM Inventory_Cards WHERE idCollector = %s AND idCard = %s"
                 cardExist = cursor.execute(sqlQuery, (user, idCardToSticker))
                 if cardExist > 0:
                     if cardExist > 1:
