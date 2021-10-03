@@ -14,7 +14,8 @@ class menuinit:
         self._ip = ip
         self._port = port  
     def buyPacket(self,client):  
-        client.sock.send("pacote".encode())
+        client.sock.send("pacote".encode()) 
+        print(client.sock.recv(1024).decode())
         
 
     def colar(self,client):    
@@ -185,7 +186,7 @@ class menuinit:
         opion = 0  
         while opion != 6:
             print("Pagina menu - User: {}".format(User.name)) 
-            option = int(input("1 - Acessar perfil \n2 - Acessar album \n3 - Acessar inventario \n4 - Acessar Loja \n 5 - Troca \n 6 - Colar No Album\n")) 
+            option = int(input("1 - Acessar perfil \n2 - Acessar album \n3 - Acessar inventario \n4 - Acessar Loja \n5 - Troca \n6 - Colar No Album\n7 - Comprar Pacotes\n")) 
             if option == 1:
                 User.show_collector()
             elif option == 2:   
@@ -209,7 +210,7 @@ class menuinit:
                 self.colar(client)  
             elif option == 7:  
                 print("---------------COMPRRAR PACOTE------------------")
-
+                self.buyPacket(client)
 
                 #sys.exit()
 
