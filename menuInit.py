@@ -13,16 +13,9 @@ class menuinit:
 
         self._ip = ip
         self._port = port  
-    def buyPacket(self): 
-        packt = [x for x in range(4)]
-        credit = 4
-        print("Preco pacote 4:")  
-        print("Saldo em conta: {}".format(credit)) 
-        ans = int(input("Digite a quantidade de pacotes que deseja comprar")) 
+    def buyPacket(self,client):  
+        client.sock.send("pacote".encode())
         
-        for i in range(ans):  
-            pass
-
 
     def colar(self,client):    
 

@@ -9,6 +9,7 @@ import MySQLdb # para o MySQL
 from pyngrok import ngrok
 import json
 import ast
+import numpy as np
 
 #============================================ criar troca ============================================
 # INSERT INTO Exchanges (idCollectorOwner, idCollectorTarget, idCard, idCardReceived) VALUES ('IdDoUsuarioQueCriouATroca', 'IdDoUsuarioQueVaiReceberAOferta', 'IdDoCardASerTrocado', 'idDoCardDesejadoEmTroca')
@@ -584,7 +585,40 @@ class Server:
                             updateInventario = """UPDATE Inventory_Cards SET quantity = quantity-1 WHERE idCollector = %s AND idCard = %s """ 
                             cursor.execute(updateInventario,(user, idCardTraded))
                     
+            elif(mensagem == "pacote"): 
+                # 1 pacote  
+                pcktPrice = 10.0
+                user = self.listID[index]  
+                index = self.listSOCK.index(cliente) 
+                sqlQuery = "SELECT coins FROM collector WHERE id = %s" 
+                cursor.execute(sqlQuery, [user]) 
+                currentCoinCollector = cursor.fetchall()  
+                cur = currentCoinCollector[0].get("coins")
+                if (cur  >= pcktPrice): 
+                    for i in range(4): 
+                        idRandom = np.random.randint(12)  
+                        verify  = "SELECT * FROM inventory_cards WHERE idCard = %s AND idCollector = %s" 
+                        QtRows = cursor.execute(verify, [idRandom],[user]) 
+                        if QtRows > 0: 
+                            update = "UPDATE inventory_CARDS SET quantity = quantity + 1 WHERE idCollector = %s and idCard = %s" 
+                            cursor.execute(update, [user],[idRandom]) 
+                            cursor.commit()  
+                        else:     
+                            insertInventory = "INSERT INTO inventory_cards (quantity, idCard, idCollector) VALUES (%s, %s, %s)" 
+                            cursor.execute(insertInventory, (1, [idRandom], [user]))  
                     
+                        dis = "UPDATE Collector SET coins = coins - %s WHERE id = %s" 
+                        cursor.execute(dis,([pcktPrice],[user]))  
+                        cursor.commit() 
+
+                    server.comandoSock("Compra efetuada com sucesso!",index) 
+                else: 
+                    server.comandoSock("Saldo insuficiente!",index) 
+
+                    
+
+
+                 
                                 
                 
             # elif(mensagem == 'comprar'):
