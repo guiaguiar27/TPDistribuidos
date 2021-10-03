@@ -586,7 +586,8 @@ class Server:
                             cursor.execute(updateInventario,(user, idCardTraded))
                     
             elif(mensagem == "pacote"): 
-                # 1 pacote  
+                # 1 pacote
+                print('entrou para comprar pacote')
                 pcktPrice = 10.0
                 user = self.listID[index]  
                 index = self.listSOCK.index(cliente) 
@@ -598,22 +599,23 @@ class Server:
                     for i in range(4): 
                         idRandom = np.random.randint(12)  
                         verify  = "SELECT * FROM inventory_cards WHERE idCard = %s AND idCollector = %s" 
-                        QtRows = cursor.execute(verify, [idRandom],[user]) 
-                        if QtRows > 0: 
+                        QtRows = cursor.execute(verify, ([idRandom],[user])) 
+                        if QtRows > 0:
                             update = "UPDATE inventory_CARDS SET quantity = quantity + 1 WHERE idCollector = %s and idCard = %s" 
-                            cursor.execute(update, [user],[idRandom]) 
-                            cursor.commit()  
-                        else:     
-                            insertInventory = "INSERT INTO inventory_cards (quantity, idCard, idCollector) VALUES (%s, %s, %s)" 
-                            cursor.execute(insertInventory, (1, [idRandom], [user]))  
+                            cursor.execute(update, ([user],[idRandom])) 
+                            print('tinha a carta')
+                        else:
+                            insertInventory = "INSERT INTO Inventory_Cards (idCard, quantity, idCollector) VALUES (%s, %s, %s)" 
+                            cursor.execute(insertInventory, ([idRandom], 1, [user]))
+                            print('não tinha a carta')
                     
                         dis = "UPDATE Collector SET coins = coins - %s WHERE id = %s" 
                         cursor.execute(dis,([pcktPrice],[user]))  
-                        cursor.commit() 
+                        con.commit()
 
-                    server.comandoSock("Compra efetuada com sucesso!",index) 
+                    server.comandoSOCK(index, "Compra efetuada com sucesso!") 
                 else: 
-                    server.comandoSock("Saldo insuficiente!",index) 
+                    server.comandoSOCK(index, "Saldo insuficiente!") 
 
                     
 
