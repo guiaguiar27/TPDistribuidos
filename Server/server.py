@@ -184,7 +184,8 @@ class Server:
                         print('o usuario é: ' + str(user) )
                         #================================= Checar se a frequencia deve ser mantida e premiar =================================
                         sqlQuery = "SELECT DATE(lastConnection) AS lastConnectionYesterday FROM COLLECTOR WHERE id = %s"
-                        cursor.execute(sqlQuery, (user))
+                        print('o id do usuário é: ' + (user))
+                        cursor.execute(sqlQuery, [user])
                         oldDateResponse = cursor.fetchall()
                         oldLastConnection = oldDateResponse[0].get('lastConnectionYesterday')
                         sqlQuery = 'SELECT DATE(DATE_SUB(NOW(), INTERVAL 1 DAY)) AS newLastConnection'
@@ -198,7 +199,7 @@ class Server:
                             # sqlQuery = 'UPDATE collector SET coins = coins + 2*accessFrequency, accessFrequency = accessFrequency + 1 WHERE email = new.email;'
                         else:
                             sqlQuery = 'UPDATE COLLECTOR SET accessFrequency = 0 WHERE id = %s'
-                            cursor.execute(sqlQuery, (user))
+                            cursor.execute(sqlQuery, [user])
 
                         con.commit()
                         #================================= Checar se a frequencia deve ser mantida e premiar =================================
@@ -215,7 +216,7 @@ class Server:
                     JOIN CARD ON INVENTORY_CARDS.idCard = CARD.id\
                     JOIN COLLECTOR ON  INVENTORY_CARDS.idCollector = COLLECTOR.id\
                     WHERE INVENTORY_CARDS.idCollector = %s"
-                cursor.execute(sqlQuery, (user)) 
+                cursor.execute(sqlQuery, [user]) 
                 teste = cursor.fetchall()
                 teste = json.dumps(teste, indent =4, sort_keys=True, default=str)
                 server.comandoSOCK(index,teste)
@@ -227,7 +228,7 @@ class Server:
                     JOIN Card C ON C.id = B.idCard\
                     JOIN Collector D ON A.id = D.idAlbum\
                     JOIN Collector E ON E.idAlbum = A.id WHERE E.id = %s"
-                cursor.execute(sqlQuery, (user))
+                cursor.execute(sqlQuery, [user])
                 teste = cursor.fetchall() 
                 teste = json.dumps(teste, indent =4, sort_keys=True, default=str) 
                 index = self.listSOCK.index(cliente) 
@@ -331,6 +332,11 @@ class Server:
 
                     print('usuario inserido')
                     server.comandoSOCK(index, 'usuario inserido')
+                    
+                    qtdRows = cursor.execute("SELECT * FROM Collector WHERE email = '%s'" % (userEmail))
+                    ReturnDB = cursor.fetchall() 
+                    if(qtdRows > 0):
+                        self.listID.append(str(ReturnDB[0].get('id')))
                     #cursor.commit()
                 else:
                     mensagem = "as senhas não coincidem"
@@ -344,7 +350,7 @@ class Server:
                 user = self.listID[index]
                 sqlQuery = "Select idAlbum FROM Collector WHERE id = %s"
                 print(str(user))
-                cursor.execute(sqlQuery, str(user))
+                cursor.execute(sqlQuery, [user])
                 response = cursor.fetchall()
                 print(str(response))
                 idAlbum = response[0].get('idAlbum')
