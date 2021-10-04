@@ -433,7 +433,8 @@ class Server:
                     
                     print('entrei no if')
                     firstSQL = """INSERT INTO Exchanges (idCollectorOwner, idCollectorTarget, idCard, idCardReceived) 
-                                   VALUES (%s, %s, %s, %s)""" 
+                                   VALUES (%s, %s, %s, %s)"""  
+                    
                     idTeste = 3 
                     cursor.execute(firstSQL, (user,idTeste,idCardtoSend, idCardToReceive))  
                     con.commit()

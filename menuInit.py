@@ -23,7 +23,6 @@ class menuinit:
         print("---------------COLAR------------------")   
         client.sock.send("ColarFigura".encode()) 
         print("Cartas faltantes:") 
-        response = client.sock.recv(6144).decode() 
         response = response.replace("'", "\"") 
         FinalResponse = json.loads(response) 
         for Dictionary in FinalResponse: 
