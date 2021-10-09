@@ -1,6 +1,7 @@
-from .album import album 
 from .inventory import inventory  
-import json
+import json 
+
+
 
 class collector:  
 
@@ -9,7 +10,6 @@ class collector:
         self.coins = 0
         self.email = None  
         self.password  = None
-        self.album = None 
         self.name = None 
         self.ClientSocket = None
 
@@ -21,26 +21,22 @@ class collector:
     def NewUser(self,email,password, name):  
 
         self.inventory = inventory()
-        self.album = album()
         self.email = email # graphical input 
         self.password = password # graphical input     
         self.name = name
         
-      
-    def addCoins(self):   
 
-        coins = input("How many coins do you want to add? ") 
-        self.coins += coins 
     
-    def removeCoins(self,coins): 
-        self.coins -= coins 
-
-    def PutSticker(self): 
-        pass 
-    
-    def show_collector(self):
-        print("Collector: " + self.name) 
-        print("Coins: " + str(self.coins))
+    def show_collector(self,client):
+        print("Collector: " + self.name)  
+        
+        response = client.getCoins() 
+        response = response.replace("'", "\"") 
+        FinalResponse = json.loads(response)  
+        
+        for c in FinalResponse: 
+            coins = c.get('coins')
+        print("Coins: " + str(coins))
         print("Email: " + self.email)
         print("Password: " + self.password) 
 
@@ -52,12 +48,11 @@ class collector:
         print("descricao: ",description) 
         print("----------------------------")  
         
+    
     def show_album(self,client):  
-
-        firstRequest = "printAlbum" 
-        client.sock.send(firstRequest.encode()) 
+        print("---------------ALBUM------------------")  
         
-        response = client.sock.recv(6144).decode() 
+        response = client.printAlbum() 
         response = response.replace("'", "\"") 
         FinalResponse = json.loads(response) 
 

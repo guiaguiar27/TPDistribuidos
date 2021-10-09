@@ -1,0 +1,5 @@
+Deve-se realizar a importação do arquivo .sql no MySQL
+
+as credenciais de acesso são:
+- login: root
+- senha: 123root123
